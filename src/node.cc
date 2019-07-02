@@ -38,6 +38,12 @@
 #include "node_v8_platform-inl.h"
 #include "node_version.h"
 
+#define NODE_USE_V8_WASM_PRELOADS 1
+
+#if NODE_USE_V8_WASM_PRELOADS
+#include "v8-wasm.h"
+#endif  // NODE_USE_V8_WASM_PRELOADS
+
 #if HAVE_OPENSSL
 #include "node_crypto.h"
 #endif
@@ -389,6 +395,19 @@ void MarkBootstrapComplete(const FunctionCallbackInfo<Value>& args) {
       performance::NODE_PERFORMANCE_MILESTONE_BOOTSTRAP_COMPLETE);
 }
 
+#if NODE_USE_V8_WASM_PRELOADS
+void *hello_world(
+  //const v8::wasm::Memory* memory,
+  const v8::wasm::Val args[],
+  v8::wasm::Val results[]
+) {
+  exit(0);
+  puts("Hello, world!");
+  results[0] = v8::wasm::Val(5);
+  return nullptr;
+}
+#endif  // NODE_USE_V8_WASM_PRELOADS
+
 MaybeLocal<Value> StartExecution(Environment* env, const char* main_script_id) {
   EscapableHandleScope scope(env->isolate());
   CHECK_NOT_NULL(main_script_id);
@@ -408,6 +427,22 @@ MaybeLocal<Value> StartExecution(Environment* env, const char* main_script_id) {
       env->NewFunctionTemplate(MarkBootstrapComplete)
           ->GetFunction(env->context())
           .ToLocalChecked()};
+
+#if NODE_USE_V8_WASM_PRELOADS
+  puts("[WASM-PL] Get isolate");
+  v8::Isolate* isolate = env->isolate();
+  puts("[WASM-PL] Create function type");
+  v8::wasm::FuncType* hello_world_type =
+      new v8::wasm::FuncType({}, { v8::wasm::ValKind::I32 });
+  puts("[WASM-PL] Create function");
+  v8::wasm::Func* fn_hello_world =
+      new v8::wasm::Func(hello_world_type, (v8::wasm::Func::callbackType) &hello_world);
+  puts("[WASM-PL] Preload function");
+  v8::wasm::PreloadNative(isolate, "node_test", "hello_world", fn_hello_world);
+  puts("[WASM-PL] Done");
+  // TODO(ohadrau): delete hello_world_type, fn_hello_world
+  // Why does this cause a crash?
+#endif  // NODE_USE_V8_WASM_PRELOADS
 
   Local<Value> result;
   if (!ExecuteBootstrapper(env, main_script_id, &parameters, &arguments)

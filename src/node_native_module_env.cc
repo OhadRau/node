@@ -113,6 +113,7 @@ void NativeModuleEnv::RecordResult(const char* id,
                                    NativeModuleLoader::Result result,
                                    Environment* env) {
   if (result == NativeModuleLoader::Result::kWithCache) {
+    printf("[WASM-PL] Inserting to native modules with cache: %s\n", id);
     env->native_modules_with_cache.insert(id);
   } else {
     env->native_modules_without_cache.insert(id);
@@ -123,6 +124,7 @@ void NativeModuleEnv::CompileFunction(const FunctionCallbackInfo<Value>& args) {
   CHECK(args[0]->IsString());
   node::Utf8Value id_v(env->isolate(), args[0].As<String>());
   const char* id = *id_v;
+  printf("[WASM-PL] CompileFunction(id = %s)\n", id);
   NativeModuleLoader::Result result;
   MaybeLocal<Function> maybe =
       NativeModuleLoader::GetInstance()->CompileAsModule(

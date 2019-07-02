@@ -200,9 +200,11 @@ MaybeLocal<Function> NativeModuleLoader::LookupAndCompile(
   ScriptCompiler::CachedData* cached_data = nullptr;
   {
     auto cache_it = code_cache_.find(id);
+    printf("[WASM-PL] code cache[%s]\n", id);
     if (cache_it != code_cache_.end()) {
       // Transfer ownership to ScriptCompiler::Source later.
       cached_data = cache_it->second.release();
+      printf("[WASM-PL] Found %s => %d\n", cache_it->first.c_str(), cached_data->length);
       code_cache_.erase(cache_it);
     }
   }
