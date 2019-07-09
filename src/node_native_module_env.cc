@@ -1,6 +1,8 @@
 #include "node_native_module_env.h"
 #include "env-inl.h"
 
+#include <iostream> // [WASM-PL]
+
 namespace node {
 namespace native_module {
 
@@ -114,6 +116,10 @@ void NativeModuleEnv::RecordResult(const char* id,
                                    Environment* env) {
   if (result == NativeModuleLoader::Result::kWithCache) {
     printf("[WASM-PL] Inserting to native modules with cache: %s\n", id);
+    auto set = env->native_modules_with_cache;
+    for(auto sit = set.begin(); sit != set.end(); sit++) {
+      std::cout << *sit << std::endl; // [WASM-PL]
+    }
     env->native_modules_with_cache.insert(id);
   } else {
     env->native_modules_without_cache.insert(id);

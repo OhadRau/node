@@ -396,15 +396,16 @@ void MarkBootstrapComplete(const FunctionCallbackInfo<Value>& args) {
 }
 
 #if NODE_USE_V8_WASM_PRELOADS
-void *hello_world(
-  //const v8::wasm::Memory* memory,
+void hello_world(
+  const v8::wasm::Memory* memory,
   const v8::wasm::Val args[],
   v8::wasm::Val results[]
 ) {
-  exit(0);
   puts("Hello, world!");
-  results[0] = v8::wasm::Val(5);
-  return nullptr;
+  int a = args[0].i32(),
+      b = args[1].i32();
+  printf("%d + %d = %d\n", a, b, a + b);
+  results[0] = v8::wasm::Val(a + b);
 }
 #endif  // NODE_USE_V8_WASM_PRELOADS
 
@@ -433,10 +434,13 @@ MaybeLocal<Value> StartExecution(Environment* env, const char* main_script_id) {
   v8::Isolate* isolate = env->isolate();
   puts("[WASM-PL] Create function type");
   v8::wasm::FuncType* hello_world_type =
-      new v8::wasm::FuncType({}, { v8::wasm::ValKind::I32 });
+      new v8::wasm::FuncType(
+          { v8::wasm::ValKind::I32, v8::wasm::ValKind::I32 },
+          { v8::wasm::ValKind::I32 }
+      );
   puts("[WASM-PL] Create function");
   v8::wasm::Func* fn_hello_world =
-      new v8::wasm::Func(hello_world_type, (v8::wasm::Func::callbackType) &hello_world);
+      new v8::wasm::Func(hello_world_type, &hello_world);
   puts("[WASM-PL] Preload function");
   v8::wasm::PreloadNative(isolate, "node_test", "hello_world", fn_hello_world);
   puts("[WASM-PL] Done");
